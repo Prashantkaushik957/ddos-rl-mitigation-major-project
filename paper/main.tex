@@ -1,0 +1,359 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{subcaption}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Adaptive DDoS Attack Mitigation in Software-Defined Networks Using Deep Reinforcement Learning with Autoencoder-Based Feature Extraction}
+
+\author{
+\IEEEauthorblockN{Prashant Kaushik}
+\IEEEauthorblockA{
+\textit{Department of Computer Science} \\
+\textit{[Your University Name]}\\
+[Your City], India \\
+[your.email@university.edu]
+}
+}
+
+\maketitle
+
+% ════════════════════════════════════════════
+% ABSTRACT
+% ════════════════════════════════════════════
+\begin{abstract}
+Distributed Denial of Service (DDoS) attacks remain one of the most critical threats to modern network infrastructure, causing significant financial losses and service disruptions globally. Traditional rule-based and signature-based mitigation approaches struggle to adapt to the evolving nature of these attacks. In this paper, we propose a novel framework for adaptive DDoS attack mitigation in Software-Defined Networking (SDN) environments using Deep Reinforcement Learning (DRL) combined with autoencoder-based feature extraction. Our framework employs a Proximal Policy Optimization (PPO) agent that operates as an intelligent SDN controller, making real-time per-flow decisions (allow, rate-limit, or drop) based on compressed latent representations of network traffic features. We evaluate our approach on the CICDDoS2019 dataset and compare it against Deep Q-Network (DQN), Double DQN (DDQN), and traditional machine learning baselines including Random Forest, SVM, and XGBoost. Experimental results demonstrate that our PPO-based framework achieves superior detection accuracy, precision, and F1-score while maintaining a low false positive rate, outperforming both DQN-based approaches and traditional classifiers. The autoencoder-based feature extraction significantly reduces computational overhead while preserving discriminative information, making the system suitable for real-time deployment.
+\end{abstract}
+
+\begin{IEEEkeywords}
+DDoS attack, mitigation, deep reinforcement learning, proximal policy optimization, software-defined networking, autoencoder, network security
+\end{IEEEkeywords}
+
+% ════════════════════════════════════════════
+% I. INTRODUCTION
+% ════════════════════════════════════════════
+\section{Introduction}
+
+The proliferation of Internet-connected devices and the exponential growth of network traffic have made Distributed Denial of Service (DDoS) attacks increasingly devastating. According to recent reports, DDoS attacks have grown in both frequency and sophistication, with volumetric attacks exceeding terabits per second~\cite{cloudflare2024}. These attacks overwhelm target network resources, rendering services unavailable to legitimate users and causing significant financial and reputational damage.
+
+Traditional DDoS mitigation strategies, including threshold-based detection, signature matching, and static firewall rules, are fundamentally limited in their ability to adapt to novel attack patterns. As attackers continuously evolve their techniques, static defense mechanisms become increasingly ineffective. Moreover, the emergence of AI-powered attack tools has further escalated the arms race between attackers and defenders~\cite{ai_ddos_2024}.
+
+Software-Defined Networking (SDN) has emerged as a promising paradigm for implementing dynamic network security policies. The separation of the control plane from the data plane in SDN enables centralized, programmable network management, making it an ideal platform for deploying intelligent defense mechanisms. However, the SDN controller itself can become a target of DDoS attacks, necessitating robust and adaptive mitigation strategies.
+
+Reinforcement Learning (RL), particularly Deep Reinforcement Learning (DRL), offers a compelling approach to this challenge. Unlike supervised learning methods that require labeled datasets and struggle with zero-day attacks, RL agents learn optimal defense policies through interaction with the network environment. The agent continuously adapts its strategy based on feedback, making it inherently suited for the dynamic nature of DDoS attack mitigation.
+
+\subsection{Contributions}
+
+The main contributions of this paper are as follows:
+
+\begin{enumerate}
+    \item We propose a novel DDoS mitigation framework that combines Proximal Policy Optimization (PPO) with autoencoder-based feature extraction for real-time per-flow decision making in SDN environments.
+    
+    \item We design a custom SDN simulation environment with an asymmetric reward function that appropriately penalizes false positives (blocking legitimate traffic) more heavily than false negatives, reflecting real-world operational priorities.
+    
+    \item We perform a comprehensive comparative analysis of three DRL algorithms (DQN, DDQN, PPO) against three traditional ML baselines (Random Forest, SVM, XGBoost) on the CICDDoS2019 dataset.
+    
+    \item We demonstrate that autoencoder-based feature compression from 20 selected features to a 10-dimensional latent space reduces computational overhead by approximately XX\% while maintaining classification accuracy.
+\end{enumerate}
+
+The remainder of this paper is organized as follows: Section II reviews related work. Section III presents the system model and problem formulation. Section IV describes the proposed framework. Section V details the experimental setup. Section VI presents and discusses the results. Section VII concludes the paper with future directions.
+
+% ════════════════════════════════════════════
+% II. RELATED WORK
+% ════════════════════════════════════════════
+\section{Related Work}
+
+\subsection{DDoS Detection Using Machine Learning}
+
+Machine learning approaches for DDoS detection have been extensively studied. Conventional methods such as Random Forest, Support Vector Machines (SVM), and gradient boosting algorithms have achieved high detection accuracy on benchmark datasets~\cite{rf_ddos_2020, svm_ids_2019}. However, these methods require pre-labeled training data and may fail to generalize to previously unseen attack patterns.
+
+Deep learning approaches, including Convolutional Neural Networks (CNNs) and Long Short-Term Memory (LSTM) networks, have shown improved performance in capturing complex traffic patterns~\cite{dl_ddos_2021}. Autoencoder-based anomaly detection has also been explored for identifying abnormal network behavior~\cite{ae_ids_2020}.
+
+\subsection{Reinforcement Learning for Network Security}
+
+The application of RL to cybersecurity has gained significant attention in recent years. Deep Q-Networks (DQN) have been applied to intrusion detection and response in SDN environments~\cite{dqn_sdn_2023}. Multi-agent reinforcement learning approaches have been proposed for collaborative defense against distributed attacks~\cite{marl_ddos_2024}.
+
+Proximal Policy Optimization (PPO), an on-policy actor-critic method, has shown promising results in network traffic management~\cite{ppo_routing_2023}. However, its application to DDoS mitigation with concurrent feature compression remains underexplored, which is the gap addressed by our work.
+
+\subsection{SDN-Based DDoS Mitigation}
+
+SDN provides a natural platform for deploying adaptive security policies. Existing SDN-based approaches include flow-rule optimization~\cite{sdn_flow_2022}, entropy-based detection~\cite{sdn_entropy_2021}, and hybrid deep learning-SDN frameworks~\cite{hybrid_sdn_dl_2024}. Our work extends these approaches by integrating a DRL-based decision agent with learned feature representations.
+
+% ════════════════════════════════════════════
+% III. SYSTEM MODEL
+% ════════════════════════════════════════════
+\section{System Model and Problem Formulation}
+
+\subsection{SDN Architecture}
+
+We consider a standard SDN architecture consisting of:
+\begin{itemize}
+    \item \textbf{Data Plane}: Network switches forwarding packets based on flow tables.
+    \item \textbf{Control Plane}: A centralized SDN controller receiving flow statistics and making forwarding decisions.
+    \item \textbf{Application Plane}: Our DRL-based mitigation agent operating as an application atop the controller.
+\end{itemize}
+
+\subsection{Markov Decision Process Formulation}
+
+We formulate the DDoS mitigation problem as a Markov Decision Process (MDP) defined by the tuple $(\mathcal{S}, \mathcal{A}, \mathcal{R}, \gamma)$:
+
+\textbf{State Space} $\mathcal{S}$: Each state $s_t \in \mathbb{R}^{d}$ represents the latent feature vector of the current network flow, extracted by the autoencoder from $n$ flow-level statistics. Formally, $s_t = f_{enc}(x_t)$, where $x_t \in \mathbb{R}^{n}$ is the raw feature vector and $f_{enc}: \mathbb{R}^{n} \rightarrow \mathbb{R}^{d}$ is the encoder function with $d \ll n$.
+
+\textbf{Action Space} $\mathcal{A}$: The agent selects from three discrete actions:
+\begin{equation}
+    \mathcal{A} = \{\text{ALLOW}, \text{RATE\_LIMIT}, \text{DROP}\}
+\end{equation}
+
+\textbf{Reward Function} $\mathcal{R}$: We design an asymmetric reward function to reflect real-world operational priorities:
+\begin{equation}
+    R(s_t, a_t) = \begin{cases}
+        +1.0 & \text{if benign traffic correctly allowed} \\
+        +2.0 & \text{if attack traffic correctly dropped} \\
+        +1.5 & \text{if attack traffic rate-limited} \\
+        -3.0 & \text{if benign traffic blocked (FP)} \\
+        -1.0 & \text{if attack traffic allowed (FN)}
+    \end{cases}
+\end{equation}
+
+The higher penalty for false positives ($-3.0$) versus false negatives ($-1.0$) reflects the practical importance of service availability---blocking legitimate users is often more harmful than briefly allowing some attack traffic.
+
+\textbf{Discount Factor}: $\gamma = 0.99$.
+
+\subsection{Autoencoder Feature Extraction}
+
+The autoencoder consists of an encoder $f_{enc}$ and decoder $f_{dec}$, trained to minimize reconstruction error:
+\begin{equation}
+    \mathcal{L}_{AE} = \frac{1}{N} \sum_{i=1}^{N} \|x_i - f_{dec}(f_{enc}(x_i))\|^2
+\end{equation}
+
+The encoder compresses $n=20$ selected features to $d=10$ latent dimensions, reducing the state space complexity for the RL agent while preserving essential discriminative information.
+
+% ════════════════════════════════════════════
+% IV. PROPOSED FRAMEWORK
+% ════════════════════════════════════════════
+\section{Proposed Framework}
+
+\subsection{Architecture Overview}
+
+Our framework consists of three main components operating in sequence:
+
+\begin{enumerate}
+    \item \textbf{Feature Extraction Module}: Raw CICFlowMeter features are first preprocessed (cleaning, normalization, mutual information-based selection) and then compressed through a trained autoencoder.
+    
+    \item \textbf{DRL Mitigation Agent}: The PPO agent processes the latent representation and outputs a mitigation action.
+    
+    \item \textbf{SDN Flow Manager}: The selected action is applied to the corresponding flow entry in the SDN switch.
+\end{enumerate}
+
+% TODO: Add architecture diagram as Figure 1
+% \begin{figure}[htbp]
+% \centerline{\includegraphics[width=\columnwidth]{figures/architecture.png}}
+% \caption{Proposed DRL-based DDoS mitigation framework.}
+% \label{fig:architecture}
+% \end{figure}
+
+\subsection{PPO Algorithm}
+
+PPO optimizes a clipped surrogate objective:
+\begin{equation}
+    L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min(r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t) \right]
+\end{equation}
+
+where $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$ is the probability ratio and $\hat{A}_t$ is the estimated advantage computed using Generalized Advantage Estimation (GAE):
+\begin{equation}
+    \hat{A}_t = \sum_{l=0}^{T-t} (\gamma \lambda)^l \delta_{t+l}, \quad \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
+\end{equation}
+
+The total loss function includes a value loss and entropy bonus:
+\begin{equation}
+    L = L^{CLIP} + c_1 L^{VF} + c_2 H[\pi_\theta]
+\end{equation}
+
+where $c_1 = 0.5$ is the value loss coefficient and $c_2 = 0.01$ is the entropy coefficient encouraging exploration.
+
+% ════════════════════════════════════════════
+% V. EXPERIMENTAL SETUP
+% ════════════════════════════════════════════
+\section{Experimental Setup}
+
+\subsection{Dataset}
+
+We use the CICDDoS2019 dataset~\cite{cicddos2019}, developed by the Canadian Institute for Cybersecurity. The dataset contains network traffic flows from multiple DDoS attack types including SYN flood, UDP flood, DNS amplification, LDAP reflection, NTP amplification, and others, along with benign traffic.
+
+\subsection{Preprocessing Pipeline}
+
+Our preprocessing pipeline consists of:
+\begin{enumerate}
+    \item \textbf{Cleaning}: Removal of infinite values, NaN entries, and duplicate records.
+    \item \textbf{Feature Filtering}: Removal of low-variance ($< 0.01$) and highly correlated ($> 0.95$) features.
+    \item \textbf{Feature Selection}: Top-20 features selected using mutual information scoring.
+    \item \textbf{Normalization}: Min-Max scaling to $[0, 1]$.
+    \item \textbf{Splitting}: 70\% train, 10\% validation, 20\% test with stratification.
+    \item \textbf{Balancing}: Undersampling majority class to 50,000 samples per class.
+\end{enumerate}
+
+\subsection{Hyperparameters}
+
+Table~\ref{tab:hyperparams} summarizes the key hyperparameters for all models.
+
+\begin{table}[htbp]
+\centering
+\caption{Hyperparameter Configuration}
+\label{tab:hyperparams}
+\begin{tabular}{lll}
+\toprule
+\textbf{Component} & \textbf{Parameter} & \textbf{Value} \\
+\midrule
+\multirow{3}{*}{Autoencoder} & Hidden layers & [64, 32] \\
+ & Latent dim & 10 \\
+ & Learning rate & $1 \times 10^{-3}$ \\
+\midrule
+\multirow{5}{*}{PPO} & Learning rate & $3 \times 10^{-4}$ \\
+ & Clip ratio ($\epsilon$) & 0.2 \\
+ & GAE $\lambda$ & 0.95 \\
+ & Update epochs & 10 \\
+ & Hidden layers & [128, 64] \\
+\midrule
+\multirow{4}{*}{DQN/DDQN} & Learning rate & $1 \times 10^{-4}$ \\
+ & Replay buffer & 100,000 \\
+ & $\epsilon$-decay steps & 50,000 \\
+ & Target update $\tau$ & 0.005 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Evaluation Metrics}
+
+We evaluate all models using:
+\begin{itemize}
+    \item \textbf{Accuracy}: Overall classification correctness
+    \item \textbf{Precision}: Ratio of true attacks among predicted attacks
+    \item \textbf{Recall}: Ratio of detected attacks among all attacks
+    \item \textbf{F1-Score}: Harmonic mean of precision and recall
+    \item \textbf{AUC-ROC}: Area under the ROC curve
+    \item \textbf{False Positive Rate}: Rate of benign traffic incorrectly blocked
+\end{itemize}
+
+% ════════════════════════════════════════════
+% VI. RESULTS AND DISCUSSION
+% ════════════════════════════════════════════
+\section{Results and Discussion}
+
+\subsection{Performance Comparison}
+
+Table~\ref{tab:comparison} presents the performance comparison of all models on the test set.
+
+\input{figures/comparison_table.tex}
+
+Fig.~\ref{fig:comparison} shows the grouped bar chart comparison across all models and metrics.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/model_comparison.png}}
+\caption{Performance comparison of DRL agents and ML baselines across accuracy, precision, recall, and F1-score metrics.}
+\label{fig:comparison}
+\end{figure}
+
+\subsection{Training Convergence}
+
+Fig.~\ref{fig:rewards} shows the training reward curves for the three DRL agents. The smoothed curves (window=20) illustrate the convergence behavior of each algorithm.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/training_rewards.png}}
+\caption{Training reward curves for DRL agents. Faded lines show raw episode rewards; bold lines show the 20-episode moving average.}
+\label{fig:rewards}
+\end{figure}
+
+DQN and DDQN converge rapidly due to the off-policy replay mechanism, while PPO requires more episodes as an on-policy method but achieves more stable convergence without the overestimation issues.
+
+\subsection{Confusion Matrices}
+
+Fig.~\ref{fig:cm} shows the confusion matrices for the DRL agents, illustrating the distribution of true positives, false positives, true negatives, and false negatives.
+
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.48\columnwidth}
+    \includegraphics[width=\textwidth]{figures/confusion_matrix_dqn.png}
+    \caption{DQN}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\columnwidth}
+    \includegraphics[width=\textwidth]{figures/confusion_matrix_ddqn.png}
+    \caption{DDQN}
+\end{subfigure}
+\vspace{0.3cm}
+\begin{subfigure}[b]{0.48\columnwidth}
+    \includegraphics[width=\textwidth]{figures/confusion_matrix_ppo.png}
+    \caption{PPO}
+\end{subfigure}
+\caption{Confusion matrices for DRL agents on the test set.}
+\label{fig:cm}
+\end{figure}
+
+\subsection{Action Distribution Analysis}
+
+Fig.~\ref{fig:actions} shows the distribution of actions taken by each DRL agent. The ideal agent should predominantly use ALLOW for benign traffic and DROP for attack traffic, with RATE\_LIMIT serving as a conservative intermediate action.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/action_distribution.png}}
+\caption{Action distribution by DRL agent. ALLOW (green), RATE\_LIMIT (orange), and DROP (red) percentages.}
+\label{fig:actions}
+\end{figure}
+
+\subsection{Ablation Study}
+
+To validate the contribution of the autoencoder-based feature extraction, we conduct an ablation study comparing:
+\begin{enumerate}
+    \item PPO with raw features (20-dim)
+    \item PPO with autoencoder features (10-dim)
+    \item PPO with PCA features (10-dim)
+\end{enumerate}
+
+The autoencoder-based compression from 20 to 10 dimensions reduces the state space by 50\% while preserving the discriminative information necessary for accurate flow classification.
+
+\subsection{Discussion}
+
+PPO's superior stability can be attributed to several factors:
+\begin{itemize}
+    \item The clipped surrogate objective provides more stable policy updates compared to Q-learning approaches.
+    \item The entropy bonus maintains exploration, preventing premature convergence to suboptimal policies.
+    \item The actor-critic architecture enables simultaneous policy and value learning.
+\end{itemize}
+
+The asymmetric reward function effectively guides the agent to prioritize service availability while maintaining robust attack detection. The higher penalty for false positives ($-3.0$) compared to false negatives ($-1.0$) trains the agent to be conservative about blocking traffic, which is desirable in production environments.
+
+% ════════════════════════════════════════════
+% VII. CONCLUSION
+% ════════════════════════════════════════════
+\section{Conclusion and Future Work}
+
+In this paper, we presented an adaptive DDoS attack mitigation framework for SDN environments using deep reinforcement learning combined with autoencoder-based feature extraction. Our PPO-based agent demonstrated superior performance compared to DQN, DDQN, and traditional ML baselines on the CICDDoS2019 dataset.
+
+Future work includes:
+\begin{enumerate}
+    \item \textbf{Multi-agent RL}: Deploying multiple cooperative agents across distributed SDN domains.
+    \item \textbf{Federated learning}: Privacy-preserving collaborative training across multiple network operators.
+    \item \textbf{Adversarial robustness}: Evaluating resistance against adversarial perturbations to traffic features.
+    \item \textbf{Real-world deployment}: Testing on live SDN testbeds using OpenFlow switches.
+\end{enumerate}
+
+% ════════════════════════════════════════════
+% REFERENCES
+% ════════════════════════════════════════════
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
